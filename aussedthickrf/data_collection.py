@@ -1,7 +1,8 @@
 import os
-import tqdm
+from tqdm import tqdm
 import matplotlib.pyplot as plt
-from obspy import Client, read_events
+from obspy import read_events
+from obspy.clients.fdsn import Client
 from rf import read_rf, RFStream, iter_event_data, IterMultipleComponents
 
 from utils import signoise
@@ -24,20 +25,21 @@ for i in range(len(inventory.get_contents()["stations"])):
         inventory.get_contents()["stations"][i].split()[0].split(".")[1]
     )
 
-no_sedi_st = [" "]
-
 # loop for getting Rf's station by station
 station_name = ["TL12"]
 
 for station_5G in station_name:
     print("Doing", station_5G)
-    data = os.path.join("rf_data/{}".format(station_5G), "")
-    catfile = data + "rf_profile_events.xml"
-    datafile = data + "rf_profile_data.h5"
-    rffile = data + "rf_profile_rfs_1hz.h5"
+    datapath = os.path.join("rf_data", station_5G, "")
+    catfile = datapath + "rf_profile_events.xml"
+    datafile = datapath + "rf_profile_data.h5"
+    rffile = datapath + "rf_profile_rfs_1hz.h5"
+    plotpath = "plots"
 
-    if not os.path.exists(data):
-        os.makedirs(data)
+    if not os.path.exists(datapath):
+        os.makedirs(datapath)
+    if not os.path.exists(plotpath):
+        os.makedirs(plotpath)
 
     st_lat = inventory.get_coordinates("7I.{}..BHZ".format(station_5G))[
         "latitude"
@@ -86,7 +88,7 @@ for station_5G in station_name:
                     stream.extend(s)
 
         stream.write(datafile, "H5")
-        print("Len of data per component after SNR:", len(stream) / 3)
+        print("Len of data per component after SNR:", len(stream) // 3)
 
     try:
         data = read_rf(datafile, "H5")
@@ -110,6 +112,8 @@ for station_5G in station_name:
             stream3c.moveout()
             stream.extend(stream3c)
 
+        stream.write(rffile, "H5")
+
         # plots obtained Rf's
         kw = {
             "trim": (-2.5, 25),
@@ -123,15 +127,13 @@ for station_5G in station_name:
             ["back_azimuth"]
         ).plot_rf(**kw)
         plt.savefig(
-            "{}_{}_.1_1.pdf".format(station_5G, "R"),
+            "{}/{}_{}_.1_1.pdf".format(plotpath, station_5G, "R"),
             bbox_inches="tight",
             pad_inches=0.2,
         )
         plt.close()
 
-        stream.write(rffile, "H5")
-
-        print("No. of RF=", len(stream) / 3, "for station", station_5G)
+        print("No. of RF=", len(stream) // 3, "for station", station_5G)
         print("--------------------------------------------------\n")
     except:
         print("No data for station {}".format(station_5G))
