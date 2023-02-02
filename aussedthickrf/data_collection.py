@@ -41,13 +41,13 @@ for station_5G in station_name:
     if not os.path.exists(plotpath):
         os.makedirs(plotpath)
 
-    st_lat = inventory.get_coordinates("7I.{}..BHZ".format(station_5G))[
+    st_lat = inventory.get_coordinates(f"7I.{station_5G}..BHZ")[
         "latitude"
     ]  # change here for diff networks
-    st_long = inventory.get_coordinates("7I.{}..BHZ".format(station_5G))[
+    st_long = inventory.get_coordinates(f"7I.{station_5G}..BHZ")[
         "longitude"
     ]  # change here for diff networks
-    station_coord = inventory.get_coordinates("7I.{}..BHZ".format(station_5G))
+    station_coord = inventory.get_coordinates(f"7I.{station_5G}..BHZ")
     # add a try loop if stations have different data formate for example EH*, HH* etc.
     starttime = inventory.select(station=station_5G)[0][0].start_date
     endtime = inventory.select(station=station_5G)[0][0].end_date
@@ -88,7 +88,7 @@ for station_5G in station_name:
                     stream.extend(s)
 
         stream.write(datafile, "H5")
-        print("Len of data per component after SNR:", len(stream) // 3)
+        print(f"Len of data per component after SNR: {len(stream) // 3}")
 
     try:
         data = read_rf(datafile, "H5")
@@ -115,6 +115,7 @@ for station_5G in station_name:
         stream.write(rffile, "H5")
 
         # plots obtained Rf's
+        component = "R"
         kw = {
             "trim": (-2.5, 25),
             "fig_width": 6,
@@ -123,11 +124,11 @@ for station_5G in station_name:
             "show_vlines": "True",
             "scale": 3.5,
         }
-        stream.select(component="R", station="{}".format(station_5G)).sort(
+        stream.select(component=component, station=station_5G).sort(
             ["back_azimuth"]
         ).plot_rf(**kw)
         plt.savefig(
-            "{}/{}_{}_.1_1.pdf".format(plotpath, station_5G, "R"),
+            f"{plotpath}/{station_5G}_{component}_.1_1.pdf",
             bbox_inches="tight",
             pad_inches=0.2,
         )
@@ -136,4 +137,4 @@ for station_5G in station_name:
         print("No. of RF=", len(stream) // 3, "for station", station_5G)
         print("--------------------------------------------------\n")
     except:
-        print("No data for station {}".format(station_5G))
+        print(f"No data for station {station_5G}")
