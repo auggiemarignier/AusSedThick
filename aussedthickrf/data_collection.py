@@ -19,18 +19,17 @@ inventory = client_5g.get_stations(
     minlongitude=128,
     maxlongitude=141.5,
 )
-station_name = []
-for i in range(len(inventory.get_contents()["stations"])):
-    station_name.append(
-        inventory.get_contents()["stations"][i].split()[0].split(".")[1]
-    )
+
+station_names = [
+    f"{network.code}.{station.code}" for network in inventory for station in network
+]
 
 # loop for getting Rf's station by station
-station_name = ["TL12"]
 
-for station_5G in station_name:
-    print("Doing", station_5G)
-    datapath = os.path.join("rf_data", station_5G, "")
+for station_name in station_names:
+    print("Doing", station_name)
+    network, station = station_name.split(".")
+    datapath = os.path.join("rf_data", station_name, "")
     catfile = datapath + "rf_profile_events.xml"
     datafile = datapath + "rf_profile_data.h5"
     rffile = datapath + "rf_profile_rfs_1hz.h5"
@@ -41,19 +40,19 @@ for station_5G in station_name:
     if not os.path.exists(plotpath):
         os.makedirs(plotpath)
 
-    st_lat = inventory.get_coordinates(f"7I.{station_5G}..BHZ")[
+    st_lat = inventory.get_coordinates(f"{network}.{station}..BHZ")[
         "latitude"
     ]  # change here for diff networks
-    st_long = inventory.get_coordinates(f"7I.{station_5G}..BHZ")[
+    st_long = inventory.get_coordinates(f"{network}.{station}..BHZ")[
         "longitude"
     ]  # change here for diff networks
-    station_coord = inventory.get_coordinates(f"7I.{station_5G}..BHZ")
+    station_coord = inventory.get_coordinates(f"{network}.{station}..BHZ")
     # add a try loop if stations have different data formate for example EH*, HH* etc.
-    starttime = inventory.select(station=station_5G)[0][0].start_date
-    endtime = inventory.select(station=station_5G)[0][0].end_date
+    starttime = inventory.select(station=station)[0][0].start_date
+    endtime = inventory.select(station=station)[0][0].end_date
     # next bit acquires the teleseismic earthquakes for a station from IRIS.
     if not os.path.exists(catfile):
-        catalog = client.get_events(
+         catalog = client.get_events(
             starttime=starttime,
             endtime=endtime,
             minmagnitude=5.5,
@@ -75,7 +74,7 @@ for station_5G in station_name:
             # try:
             for s in iter_event_data(
                 catalog,
-                inventory.select(station=station_5G),
+                inventory.select(station=station),
                 client_5g.get_waveforms,
                 pbar=pbar,
             ):  # ,**kw):
@@ -124,17 +123,17 @@ for station_5G in station_name:
             "show_vlines": "True",
             "scale": 3.5,
         }
-        stream.select(component=component, station=station_5G).sort(
+        stream.select(component=component, station=station).sort(
             ["back_azimuth"]
         ).plot_rf(**kw)
         plt.savefig(
-            f"{plotpath}/{station_5G}_{component}_.1_1.pdf",
+            f"{plotpath}/{station_name}_{component}_.1_1.pdf",
             bbox_inches="tight",
             pad_inches=0.2,
         )
         plt.close()
 
-        print("No. of RF=", len(stream) // 3, "for station", station_5G)
+        print("No. of RF=", len(stream) // 3, "for station", station_name)
         print("--------------------------------------------------\n")
     except:
-        print(f"No data for station {station_5G}")
+        print(f"No data for station {station_name}")
