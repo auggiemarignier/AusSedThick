@@ -1,6 +1,6 @@
 import os
 import matplotlib.pyplot as plt
-import tqdm
+from tqdm import tqdm
 import numpy as np
 from rf import read_rf, RFStream, IterMultipleComponents
 
