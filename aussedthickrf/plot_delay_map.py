@@ -12,6 +12,7 @@ import numpy as np
 import random
 import pygmt
 import pandas as pd
+import sys
 
 
 ln_min, ln_max = (112, 155)
@@ -31,10 +32,11 @@ inventory = client.get_stations(
     maxlatitude=lt_max,
 )
 
+rfdatafile = sys.argv[1]
+mapfile = sys.argv[2]
+
 stations_with_delays = {}
-with open(
-    "/Users/auggiemarignier/Documents/ANU/aus_sediment_thickness/AU_rf_delays.txt"
-) as f:
+with open(rfdatafile) as f:
     for line in f.readlines():
         split = line.split()
         stations_with_delays[split[0]] = float(split[1])
@@ -65,9 +67,7 @@ fig.basemap(region=[ln_min, ln_max, lt_min, lt_max], frame=True)
 fig.coast(shorelines=1, land="#ffffe6", water="#e6ffff", borders="2/1p,grey")
 
 markers = "dhist"
-pygmt.makecpt(
-    cmap="inferno", series=[delays.min(), delays.max()]
-)
+pygmt.makecpt(cmap="turbo", series=[delays.min(), delays.max()])
 
 marker = random.choice(markers)
 fig.plot(
@@ -79,4 +79,4 @@ fig.plot(
     size=np.full_like(lons, 0.5),
 )
 fig.colorbar(frame="af+lDelay Time TPsb (s)")
-fig.show()
+fig.savefig(mapfile)
