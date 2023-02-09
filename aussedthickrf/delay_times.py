@@ -105,8 +105,10 @@ def plot_stacks(stream, fig_width=7., trace_height=0.5,
     return fig
 
 
+directory = sys.argv[1]
+
 # Load precomputed RFs for a network
-RF_FILENAME = '/g/data/ha3/am3591/AU-analysis/AU_rf_iter-vk.h5'
+RF_FILENAME = f'{directory}/AU_rf_iter-vk.h5'
 rf_stream_master = rf.read_rf(RF_FILENAME)
 
 # Drop RFs that do not meet quality estimate
@@ -145,9 +147,9 @@ stacked = rf.RFStream(stacked).sort(['delay'], reverse=True)
 
 # Plot stacks
 fig = plot_stacks(stacked)
-fig.savefig("/g/data/ha3/am3591/AU-analysis/AU_rf_delays.png")
+fig.savefig(f"{directory}/AU_rf_delays.png")
 
 # Save delays
-with open("/g/data/ha3/am3591/AU-analysis/AU_rf_delays.txt", "w") as f:
+with open(f"{directory}/AU_rf_delays.txt", "w") as f:
     for tr in stacked:
         f.write(f"{tr.meta.station:<8}\t{tr.stats.delay:.2}\n")
