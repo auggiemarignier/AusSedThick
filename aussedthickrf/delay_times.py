@@ -1,6 +1,9 @@
 import sys
+import os
+import random
 import numpy as np
-
+from obspy.clients.fdsn import Client
+from obspy.core import UTCDateTime
 import rf
 import rf.imaging
 
@@ -8,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import (AutoMinorLocator, FixedLocator, FixedFormatter, MaxNLocator)
 import matplotlib
 from matplotlib import cm
+import pygmt
 from collections import defaultdict
 
 
@@ -86,7 +90,7 @@ def plot_stacks(stream, fig_width=7., trace_height=0.5,
                                        vmax=np.max(delays))
 
     for i, tr in enumerate(stream):
-        rgba_color = cm.viridis(tr.stats.delay)
+        rgba_color = cm.turbo(tr.stats.delay)
         _plot(ax1, times, tr.data / max_[i] * scale, i + 1,
               rgba_color,
               f"{tr.stats.network}.{tr.stats.station}")
@@ -98,18 +102,17 @@ def plot_stacks(stream, fig_width=7., trace_height=0.5,
     ax1.set_xlabel('time (s)')
     ax1.xaxis.set_minor_locator(AutoMinorLocator())
 
-    sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
+    sm = plt.cm.ScalarMappable(cmap='turbo', norm=norm)
 
     cbar = plt.colorbar(sm, orientation='horizontal')
     cbar.set_label('Delay [s]')
     return fig
 
 
-directory = sys.argv[1]
-
 # Load precomputed RFs for a network
-RF_FILENAME = f'{directory}/AU_rf_iter-vk.h5'
+RF_FILENAME = sys.argv[1]
 rf_stream_master = rf.read_rf(RF_FILENAME)
+basename = os.path.splitext(RF_FILENAME)[0]
 
 # Drop RFs that do not meet quality estimate
 MIN_SLOPE_RATIO = 5
@@ -147,9 +150,70 @@ stacked = rf.RFStream(stacked).sort(['delay'], reverse=True)
 
 # Plot stacks
 fig = plot_stacks(stacked)
-fig.savefig(f"{directory}/AU_rf_delays.png")
+fig.savefig(f"{basename}_delays.png")
 
 # Save delays
-with open(f"{directory}/AU_rf_delays.txt", "w") as f:
+stations_with_delays = {}
+with open(f"{basename}_delays.txt", "w") as f:
     for tr in stacked:
+        stations_with_delays[tr.meta.station] = tr.stats.delay
         f.write(f"{tr.meta.station:<8}\t{tr.stats.delay:.2}\n")
+
+
+# Plot map
+ln_min, ln_max = (112, 155)
+lt_min, lt_max = (-46, -8)
+
+client = Client("IRIS")
+starttime = UTCDateTime("2001-01-01")
+endtime = UTCDateTime("2023-01-02")
+inventory = client.get_stations(
+    network="AU,II,IU,G",
+    starttime=starttime,
+    endtime=endtime,
+    level="channel",
+    minlongitude=ln_min,
+    maxlongitude=ln_max,
+    minlatitude=lt_min,
+    maxlatitude=lt_max,
+)
+
+all_stations = list(
+    {
+        sta.code
+        for network in inventory
+        for sta in network
+        if sta.code in stations_with_delays
+    }  # using a set to avoid duplicates
+)
+lats = np.zeros_like(all_stations, dtype=float)
+lons = np.zeros_like(all_stations, dtype=float)
+nets = np.zeros_like(all_stations, dtype=str)
+delays = np.zeros_like(all_stations, dtype=float)
+for i, sta in enumerate(all_stations):
+    network = inventory.select(station=sta)[0]
+    station = network[0]
+    lats[i] = station.latitude
+    lons[i] = station.longitude
+    nets[i] = network.code
+    delays[i] = stations_with_delays[sta]
+
+fig = pygmt.Figure()
+fig.basemap(region=[ln_min, ln_max, lt_min, lt_max], frame=True)
+fig.coast(shorelines=1, land="#ffffe6", water="#e6ffff", borders="2/1p,grey")
+
+markers = "dhist"
+pygmt.makecpt(cmap="turbo", series=[delays.min(), delays.max()])
+
+marker = random.choice(markers)
+fig.plot(
+    x=lons,
+    y=lats,
+    style=f"{marker}c",
+    fill=delays,
+    cmap=True,
+    size=np.full_like(lons, 0.5),
+)
+fig.colorbar(frame="af+lDelay Time TPsb (s)")
+mapfile = os.path.splitext(f"{basename}_delays_map.png")[0] + "_map.png"
+fig.savefig(mapfile)
