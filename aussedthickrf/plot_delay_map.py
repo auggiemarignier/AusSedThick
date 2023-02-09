@@ -13,6 +13,7 @@ import random
 import pygmt
 import pandas as pd
 import sys
+import os
 
 
 ln_min, ln_max = (112, 155)
@@ -32,11 +33,9 @@ inventory = client.get_stations(
     maxlatitude=lt_max,
 )
 
-rfdatafile = sys.argv[1]
-mapfile = sys.argv[2]
-
+delaysfile = sys.argv[1]
 stations_with_delays = {}
-with open(rfdatafile) as f:
+with open(delaysfile) as f:
     for line in f.readlines():
         split = line.split()
         stations_with_delays[split[0]] = float(split[1])
@@ -79,4 +78,5 @@ fig.plot(
     size=np.full_like(lons, 0.5),
 )
 fig.colorbar(frame="af+lDelay Time TPsb (s)")
+mapfile = os.path.splitext(delaysfile)[0] + "_map.png"
 fig.savefig(mapfile)
