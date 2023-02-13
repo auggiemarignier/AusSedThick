@@ -4,6 +4,7 @@ import random
 import numpy as np
 from obspy.clients.fdsn import Client
 from obspy.core import UTCDateTime
+from obspy.core.inventory.inventory import read_inventory
 import rf
 import rf.imaging
 import pygmt
@@ -66,19 +67,33 @@ with open(f"{basename}_delays.txt", "w") as f:
 ln_min, ln_max = (112, 155)
 lt_min, lt_max = (-46, -8)
 
-client = Client("IRIS")
-starttime = UTCDateTime("2001-01-01")
-endtime = UTCDateTime("2023-01-02")
-inventory = client.get_stations(
-    network="AU,II,IU,G",
-    starttime=starttime,
-    endtime=endtime,
-    level="channel",
-    minlongitude=ln_min,
-    maxlongitude=ln_max,
-    minlatitude=lt_min,
-    maxlatitude=lt_max,
-)
+try:
+    inventory = read_inventory(sys.argv[2])
+except IndexError:
+    starttime = UTCDateTime("1950-01-01")
+    endtime = UTCDateTime("2023-01-02")
+    client = Client("IRIS")
+    perm_inventory = client.get_stations(
+        network="AU,II,IU,G",
+        starttime=starttime,
+        endtime=endtime,
+        level="channel",
+        minlongitude=ln_min,
+        maxlongitude=ln_max,
+        minlatitude=lt_min,
+        maxlatitude=lt_max,
+    )
+    client = Client("AUSPASS")
+    temp_inventory = client.get_stations(
+        starttime=starttime,
+        endtime=endtime,
+        level="channel",
+        minlongitude=ln_min,
+        maxlongitude=ln_max,
+        minlatitude=lt_min,
+        maxlatitude=lt_max,
+    )
+    inventory = perm_inventory + temp_inventory
 
 all_stations = list(
     {
