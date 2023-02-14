@@ -13,6 +13,18 @@ from collections import defaultdict
 from utils import plot_stacks
 
 
+def get_delay(stream: rf.RFStream()) -> rf.RFStream():
+    """
+    Gets the delay time between the first peak and the
+    P-arrival (onset)
+    """
+    d = stream.times()[np.argmax(stream.data)] - (
+        stream.statstream.onset - stream.stats.starttime
+    )
+    stream.stats["delay"] = d
+    return stream
+
+
 def main(rf_filename):
     # Load precomputed RFs for a network
     rf_stream_master = rf.read_rf(rf_filename)
@@ -20,9 +32,10 @@ def main(rf_filename):
 
     # Drop RFs that do not meet quality estimate
     MIN_SLOPE_RATIO = 5
-    rf_stream = rf.RFStream([tr.copy() for tr in rf_stream_master
-                            if tr.stats.slope_ratio > MIN_SLOPE_RATIO]).sort(['back_azimuth'])
-    rf_stream = rf_stream.select(channel='??R')
+    rf_stream = rf.RFStream(
+        [tr.copy() for tr in rf_stream_master if tr.stats.slope_ratio > MIN_SLOPE_RATIO]
+    ).sort(["back_azimuth"])
+    rf_stream = rf_stream.select(channel="??R")
 
     # Create a dictionary of RFs by station
     rf_station_dict = defaultdict(list)
@@ -32,7 +45,7 @@ def main(rf_filename):
     # Trim RFs
     for k, v in rf_station_dict.items():
         temp_stream = rf.RFStream([tr.copy() for tr in v])
-        rf_station_dict[k] = temp_stream.trim2(-5, 10, reftime='onset')
+        rf_station_dict[k] = temp_stream.trim2(-5, 10, reftime="onset")
 
     # Moveout, stack and compute delays
     stacked = []
@@ -46,11 +59,10 @@ def main(rf_filename):
         except ValueError:
             continue
         else:
-            d = s.times()[np.argmax(s.data)] - (s.stats.onset - s.stats.starttime)
-            s.stats['delay'] = d
+            s = get_delay(s)
             stacked.append(s)
-            delays.append(d)
-    stacked = rf.RFStream(stacked).sort(['delay'], reverse=True)
+            delays.append(s.stats["delay"])
+    stacked = rf.RFStream(stacked).sort(["delay"], reverse=True)
 
     # Save delays
     stations_with_delays = {}
@@ -60,4 +72,3 @@ def main(rf_filename):
             f.write(f"{tr.meta.station:<8}\t{tr.stats.delay:.2}\n")
 
     return stations_with_delays
-
