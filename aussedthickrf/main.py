@@ -75,26 +75,11 @@ generate_rf._main(
     only_corrections=d["only_corrections"],
 )
 
-#
-# RF QC
-#
-rf_stream_master = rf.read_rf(rf_filename)
-
-# Drop RFs that do not meet quality estimate
-MIN_SLOPE_RATIO = 5
-rf_stream = rf.RFStream(
-    [tr.copy() for tr in rf_stream_master if tr.stats.slope_ratio > MIN_SLOPE_RATIO]
-).sort(["back_azimuth"])
-
-rf_stream.taper(max_percentage=0.05)
-rf_stream.trim2(-5, 10, reftime="onset")
-rf_stream.moveout()
-
 
 #
 # Calcualte Delays
 #
-delay_times.main(rf_stream)
+delay_times.main(config["rfs"]["output_file"])
 
 
 #

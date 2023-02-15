@@ -13,6 +13,19 @@ from collections import defaultdict
 from utils import plot_stacks
 
 
+def rf_quality_control(stream: rf.RFStream) -> rf.RFStream():
+    # Drop RFs that do not meet quality estimate
+    MIN_SLOPE_RATIO = 5
+    stream = rf.RFStream(
+        [tr.copy() for tr in stream if tr.stats.slope_ratio > MIN_SLOPE_RATIO]
+    ).sort(["back_azimuth"])
+
+    stream.taper(max_percentage=0.05)
+    stream.trim2(-5, 10, reftime="onset")
+    stream.moveout()
+    return stream
+
+
 def get_delay(stream: rf.RFStream()) -> rf.RFStream():
     """
     Gets the delay time between the first peak and the
@@ -25,7 +38,10 @@ def get_delay(stream: rf.RFStream()) -> rf.RFStream():
     return stream
 
 
-def main(rf_stream):
+def main(input_file: str):
+    rf_stream_master = rf.read_rf(input_file)
+
+    rf_stream = rf_quality_control(rf_stream_master)
     rf_stream = rf_stream.select(channel="??R")
 
     # Create a dictionary of RFs by station
@@ -37,11 +53,10 @@ def main(rf_stream):
     stacked = []
     delays = []
     for k, v in rf_station_dict.items():
-        m = v.copy().moveout()
         try:
             # sometimes this fails
             # moveout might produce some weird numpy arrays that can't be stacked
-            s = m.stack()[0]
+            s = v.stack()[0]
         except ValueError:
             continue
         else:
