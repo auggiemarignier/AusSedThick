@@ -93,7 +93,7 @@ rf_quality_filter.main(
 #
 # Calcualte Delays
 #
-delay_times.main(output_file)
+stacked = delay_times.main(output_file)
 
 
 #

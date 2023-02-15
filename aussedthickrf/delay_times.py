@@ -29,7 +29,7 @@ def get_delay(stream: rf.RFStream()) -> rf.RFStream():
     return stream
 
 
-def main(input_file: str):
+def main(input_file: str) -> rf.RFStream():
     rf_stream_master = rf.read_rf(input_file)
 
     rf_stream = rf_quality_control(rf_stream_master)
@@ -61,3 +61,5 @@ def main(input_file: str):
     with open(output_file, "w") as f:
         for tr in stacked:
             f.write(f"{tr.meta.station:<8}\t{tr.stats.delay}\n")
+
+    return stacked
