@@ -1,16 +1,6 @@
-import sys
-import os
-import random
 import numpy as np
-from obspy.clients.fdsn import Client
-from obspy.core import UTCDateTime
-from obspy.core.inventory.inventory import read_inventory
 import rf
-import rf.imaging
-import pygmt
 from collections import defaultdict
-
-from utils import plot_stacks
 
 
 def rf_quality_control(stream: rf.RFStream) -> rf.RFStream():
