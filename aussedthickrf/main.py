@@ -107,5 +107,5 @@ bulk_rf_report.main(
     network_list=config["download_waveforms"]["network_list"],
     station_list=config["download_waveforms"]["station_list"],
 )
-plot_stacks()
-plot_map()
+plot_stacks(stacked, split[0] + "_stacks.png")
+plot_map(output_file, split[0] + "_delays_map.png")
