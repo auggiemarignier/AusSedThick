@@ -1,58 +1,63 @@
 from seismic import extract_event_traces
 from seismic.receiver_fn import generate_rf, bulk_rf_report
 import delay_times
-from utils import signoise
+from utils import signoise, parse_config
 
 import rf
+import sys
+import yaml
+
+
+try:
+    config_file = sys.argv[1]
+except IndexError:
+    config_file = "config.yaml"
+
+with open(config_file, "r") as f:
+    config = yaml.safe_load(f)
 
 #
 # Data Collection
 #
 
 # Initial run to get EQ catalog
+d = config["download_waveforms"]
 extract_event_traces.main(
-    inventory_file=None,
-    network_list="*",
-    station_list=None,
-    waveform_database=None,
-    event_catalog_file=None,
-    event_trace_datafile=None,
-    start_time=None,
-    end_time=None,
-    taup_model=None,
-    distance_range=None,
-    magnitude_range=None,
-    sw_magnitude_range=None,
     catalog_only=True,
-    resample_hz=None,
-    sw_resample_hz=None,
-    p_data=None,
-    s_data=None,
-    sw_data=None,
-    dry_run=None,
+    inventory_file=d["inventory_file"],
+    network_list=d["network_list"],
+    station_list=d["station_list"],
+    waveform_database=d["waveform_database"],
+    event_catalog_file=d["event_catalog_file"],
+    event_trace_datafile=d["event_trace_datafile"],
+    start_time=d["start_time"],
+    end_time=d["end_time"],
+    taup_model=d["taup_model"],
+    distance_range=d["distance_range"],
+    magnitude_range=d["magnitude_range"],
+    sw_magnitude_range=d["sw_magnitude_range"],
 )
 
 # Second run to get waveforms
 extract_event_traces.main(
-    inventory_file=None,
-    network_list=None,
-    station_list=None,
-    waveform_database=None,
-    event_catalog_file=None,
-    event_trace_datafile=None,
-    start_time=None,
-    end_time=None,
-    taup_model=None,
-    distance_range=None,
-    magnitude_range=None,
-    sw_magnitude_range=None,
     catalog_only=False,
-    resample_hz=None,
-    sw_resample_hz=None,
-    p_data=None,
-    s_data=None,
-    sw_data=None,
-    dry_run=None,
+    inventory_file=d["inventory_file"],
+    network_list=d["network_list"],
+    station_list=d["station_list"],
+    waveform_database=d["waveform_database"],
+    event_catalog_file=d["event_catalog_file"],
+    event_trace_datafile=d["event_trace_datafile"],
+    start_time=d["start_time"],
+    end_time=d["end_time"],
+    taup_model=d["taup_model"],
+    distance_range=d["distance_range"],
+    magnitude_range=d["magnitude_range"],
+    sw_magnitude_range=d["sw_magnitude_range"],
+    resample_hz=d["resample_hz"],
+    sw_resample_hz=d["sw_resample_hz"],
+    p_data=d["p_data"],
+    s_data=d["s_data"],
+    sw_data=d["sw_data"],
 )
 
 #
