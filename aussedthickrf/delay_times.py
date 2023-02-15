@@ -25,16 +25,7 @@ def get_delay(stream: rf.RFStream()) -> rf.RFStream():
     return stream
 
 
-def main(rf_filename):
-    # Load precomputed RFs for a network
-    rf_stream_master = rf.read_rf(rf_filename)
-    basename = os.path.splitext(rf_filename)[0]
-
-    # Drop RFs that do not meet quality estimate
-    MIN_SLOPE_RATIO = 5
-    rf_stream = rf.RFStream(
-        [tr.copy() for tr in rf_stream_master if tr.stats.slope_ratio > MIN_SLOPE_RATIO]
-    ).sort(["back_azimuth"])
+def main(rf_stream):
     rf_stream = rf_stream.select(channel="??R")
 
     # Create a dictionary of RFs by station
@@ -42,12 +33,7 @@ def main(rf_filename):
     for trc in rf_stream:
         rf_station_dict[trc.stats.station].append(trc)
 
-    # Trim RFs
-    for k, v in rf_station_dict.items():
-        temp_stream = rf.RFStream([tr.copy() for tr in v])
-        rf_station_dict[k] = temp_stream.trim2(-5, 10, reftime="onset")
-
-    # Moveout, stack and compute delays
+    # Stack and compute delays
     stacked = []
     delays = []
     for k, v in rf_station_dict.items():
