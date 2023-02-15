@@ -98,4 +98,11 @@ delay_times.main(output_file)
 #
 # Plots
 #
-bulk_rf_report.main()
+split = splitext(config["rfs"]["output_file"])
+report_file = split[0] + "_bulkreport.pdf"
+bulk_rf_report.main(
+    output_file,
+    report_file,
+    network_list=config["download_waveforms"]["network_list"],
+    station_list=config["download_waveforms"]["station_list"],
+)
