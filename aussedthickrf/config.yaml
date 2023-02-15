@@ -1,4 +1,4 @@
-download_events:
+download_waveforms:
   inventory_file: null
   network_list: "*"
   station_list: "*"
@@ -14,36 +14,11 @@ download_events:
   magnitude_range:
     - 6.0
     - 10.0
-  catalog_only: true
   resample_hz: 10
   sw_resample_hz: 2
   p_data: false
   s_data: false
   sw_data: false
-  dry_run: false
-extract_waveforms:
-  inventory_file: null
-  network_list: "*"
-  station_list: "*"
-  waveform_database: null
-  event_catalog_file: null
-  event_trace_datafile: null
-  start_time: ""
-  end_time: ""
-  taup_model: "iasp91"
-  distance_range: 
-    - 35
-    - 90
-  magnitude_range:
-    - 6.0
-    - 10.0
-  catalog_only: true
-  resample_hz: 10
-  sw_resample_hz: 2
-  p_data: false
-  s_data: false
-  sw_data: false
-  dry_run: false
 rfs:
   input_file: ""
   output_file: ""
