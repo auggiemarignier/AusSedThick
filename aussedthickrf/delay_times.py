@@ -1,5 +1,6 @@
 import numpy as np
 import rf
+from os.path import splitext
 from collections import defaultdict
 
 
@@ -56,10 +57,7 @@ def main(input_file: str):
     stacked = rf.RFStream(stacked).sort(["delay"], reverse=True)
 
     # Save delays
-    stations_with_delays = {}
-    with open(f"{basename}_delays.txt", "w") as f:
+    output_file = f"{splitext(input_file)[0]}_delays.txt"
+    with open(output_file, "w") as f:
         for tr in stacked:
-            stations_with_delays[tr.meta.station] = tr.stats.delay
-            f.write(f"{tr.meta.station:<8}\t{tr.stats.delay:.2}\n")
-
-    return stations_with_delays
+            f.write(f"{tr.meta.station:<8}\t{tr.stats.delay}\n")
