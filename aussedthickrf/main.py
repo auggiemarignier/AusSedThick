@@ -1,9 +1,10 @@
 from seismic import extract_event_traces
-from seismic.receiver_fn import generate_rf, bulk_rf_report
+from seismic.receiver_fn import generate_rf, bulk_rf_report, rf_quality_filter
 import delay_times
 from utils import signoise, parse_config
 
 import rf
+from os.path import splitext, expanduser
 import sys
 import json
 
@@ -77,9 +78,21 @@ generate_rf._main(
 
 
 #
+# Quality filters
+#
+split = splitext(config["rfs"]["output_file"])
+output_file = split[0] + "_qf" + split[1]
+rf_quality_filter.main(
+    input_file=config["rfs"]["output_file"],
+    output_file=output_file,
+    temp_dir=f"{expanduser('~')}/tmp",
+    parallel=True,
+)
+
+#
 # Calcualte Delays
 #
-delay_times.main(config["rfs"]["output_file"])
+delay_times.main(output_file)
 
 
 #
