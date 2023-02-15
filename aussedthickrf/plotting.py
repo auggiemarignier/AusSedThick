@@ -1,42 +1,50 @@
-
-# Plot stacks
-fig = plot_stacks(stacked)
-fig.savefig(f"{basename}_delays.png")
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import AutoMinorLocator
+import numpy as np
+from obspy.clients.fdsn import Client
+from obspy.core import UTCDateTime
+import pygmt
+import random
 
 
 # Plot map
-def plot_map():
+def plot_map(delays_file, output_file):
     ln_min, ln_max = (112, 155)
     lt_min, lt_max = (-46, -8)
 
-    try:
-        inventory = read_inventory(sys.argv[2])
-    except IndexError:
-        starttime = UTCDateTime("1950-01-01")
-        endtime = UTCDateTime("2023-01-02")
-        client = Client("IRIS")
-        perm_inventory = client.get_stations(
-            network="AU,II,IU,G",
-            starttime=starttime,
-            endtime=endtime,
-            level="channel",
-            minlongitude=ln_min,
-            maxlongitude=ln_max,
-            minlatitude=lt_min,
-            maxlatitude=lt_max,
-        )
-        client = Client("AUSPASS")
-        temp_inventory = client.get_stations(
-            starttime=starttime,
-            endtime=endtime,
-            level="channel",
-            minlongitude=ln_min,
-            maxlongitude=ln_max,
-            minlatitude=lt_min,
-            maxlatitude=lt_max,
-        )
-        inventory = perm_inventory + temp_inventory
+    starttime = UTCDateTime("1950-01-01")
+    endtime = UTCDateTime("2023-01-02")
+    client = Client("IRIS")
+    perm_inventory = client.get_stations(
+        network="AU,II,IU,G",
+        starttime=starttime,
+        endtime=endtime,
+        level="channel",
+        minlongitude=ln_min,
+        maxlongitude=ln_max,
+        minlatitude=lt_min,
+        maxlatitude=lt_max,
+    )
+    client = Client("AUSPASS")
+    temp_inventory = client.get_stations(
+        starttime=starttime,
+        endtime=endtime,
+        level="channel",
+        minlongitude=ln_min,
+        maxlongitude=ln_max,
+        minlatitude=lt_min,
+        maxlatitude=lt_max,
+    )
+    inventory = perm_inventory + temp_inventory
 
+    with open(delays_file, "r") as f:
+        lines = f.readlines()
+        stations_with_delays = {}
+        for line in lines:
+            split = line.split()
+            stations_with_delays[split[0]] = split[1]
     all_stations = list(
         {
             sta.code
@@ -74,15 +82,21 @@ def plot_map():
         size=np.full_like(lons, 0.5),
     )
     fig.colorbar(frame="af+lDelay Time TPsb (s)")
-    mapfile = f"{basename}_map.png"
-    fig.savefig(mapfile)
+    fig.savefig(output_file)
 
 
 # THIS SEEMS TO HAVE BEEN RIPPED FROM rf.imaging.plot_rf
-def plot_stacks(stream, fig_width=7., trace_height=0.5,
-                stack_height=0.5, dpi=None,
-                scale=1, trim=None,
-                show_vlines=False):
+def plot_stacks(
+    stream,
+    output_file,
+    fig_width=7.0,
+    trace_height=0.5,
+    stack_height=0.5,
+    dpi=None,
+    scale=1,
+    trim=None,
+    show_vlines=False,
+):
     """
     Plot receiver functions.
 
@@ -108,7 +122,7 @@ def plot_stacks(stream, fig_width=7., trace_height=0.5,
     if len(stream) == 0:
         return
     if trim:
-        stream = stream.slice2(*trim, reftime='onset')
+        stream = stream.slice2(*trim, reftime="onset")
     N = len(stream)
     # calculate lag times
     stats = stream[0].stats
@@ -139,35 +153,40 @@ def plot_stacks(stream, fig_width=7., trace_height=0.5,
     ax1 = fig.add_axes([fl, fb, fw2, h * (N + 2)])
 
     def _plot(ax, t, d, i, color, label):
-        c1, c2 = (color, 'k')
+        c1, c2 = (color, "k")
         ax.text(-3, i + 0.2, label)
         if c1:
-            ax.fill_between(t, d + i, i, where=d >= 0, lw=0., facecolor=c1)
+            ax.fill_between(t, d + i, i, where=d >= 0, lw=0.0, facecolor=c1)
         if c2:
-            ax.fill_between(t, d + i, i, where=d < 0, lw=0., facecolor=c2)
-        ax.plot(t, d + i, 'k')
+            ax.fill_between(t, d + i, i, where=d < 0, lw=0.0, facecolor=c2)
+        ax.plot(t, d + i, "k")
 
     max_ = np.array([np.max(np.abs(tr.data)) for tr in stream])
 
     delays = np.array([tr.stats.delay for tr in stream])
-    norm = matplotlib.colors.Normalize(vmin=np.min(delays), 
-                                       vmax=np.max(delays))
+    norm = matplotlib.colors.Normalize(vmin=np.min(delays), vmax=np.max(delays))
 
     for i, tr in enumerate(stream):
         rgba_color = cm.turbo(tr.stats.delay)
-        _plot(ax1, times, tr.data / max_[i] * scale, i + 1,
-              rgba_color,
-              f"{tr.stats.network}.{tr.stats.station}")
+        _plot(
+            ax1,
+            times,
+            tr.data / max_[i] * scale,
+            i + 1,
+            rgba_color,
+            f"{tr.stats.network}.{tr.stats.station}",
+        )
 
     # set x and y limits
     ax1.set_xlim(times[0], times[-1])
     ax1.set_ylim(-0.5, N + 1.5)
-    ax1.set_yticklabels('')
-    ax1.set_xlabel('time (s)')
+    ax1.set_yticklabels("")
+    ax1.set_xlabel("time (s)")
     ax1.xaxis.set_minor_locator(AutoMinorLocator())
 
-    sm = plt.cm.ScalarMappable(cmap='turbo', norm=norm)
+    sm = plt.cm.ScalarMappable(cmap="turbo", norm=norm)
 
-    cbar = plt.colorbar(sm, orientation='horizontal')
-    cbar.set_label('Delay [s]')
-    return fig
+    cbar = plt.colorbar(sm, orientation="horizontal")
+    cbar.set_label("Delay [s]")
+
+    fig.savefig(output_file)
