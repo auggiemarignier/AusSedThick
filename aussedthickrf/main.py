@@ -1,10 +1,8 @@
 from seismic import extract_event_traces
 from seismic.receiver_fn import generate_rf, bulk_rf_report, rf_quality_filter
 import delay_times
-from utils import signoise, parse_config
 from plotting import plot_stacks, plot_map
 
-import rf
 from os.path import splitext, expanduser
 import sys
 import json
