@@ -5,16 +5,16 @@ from utils import signoise, parse_config
 
 import rf
 import sys
-import yaml
+import json
 
 
 try:
     config_file = sys.argv[1]
 except IndexError:
-    config_file = "config.yaml"
+    config_file = "config.json"
 
 with open(config_file, "r") as f:
-    config = yaml.safe_load(f)
+    config = json.load(f)
 
 #
 # Data Collection
@@ -65,13 +65,14 @@ extract_event_traces.main(
 #
 # some QC of waveforms is performed in generate_rf._main()
 # can handle QC and preprocessing via config.json
+d = config["rfs"]
 generate_rf._main(
-    input_file=None,
-    output_file=None,
-    network_list=None,
-    station_list=None,
-    config_file=None,
-    only_corrections=None,
+    input_file=d["input_file"],
+    output_file=d["output_file"],
+    network_list=d["network_list"],
+    station_list=d["station_list"],
+    config_file=d["config_file"],
+    only_corrections=d["only_corrections"],
 )
 
 #
