@@ -1,0 +1,4 @@
+[submodule "hiperseis_fork"]
+	path = hiperseis
+	url = https://github.com/auggiemarignier/hiperseis.git
+	branch = update_python_rf
