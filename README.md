@@ -21,11 +21,10 @@ The package has not been used with other versions.
 We recommend using `conda` to manage your environment, mainly because of the non-python third-party dependencies of `hiperseis`.
 
 ```bash
-conda create --name aussedthick python=3.9
+conda env create -f environment.yml
 conda activate aussedthick
 git clone --recurse-submodules https://github.com/auggiemarignier/AusSedThick.git
 cd AusSedThick
-conda env create -f environment.yml
 cd hiperseis
 pip install .
 ```
