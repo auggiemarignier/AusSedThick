@@ -1,4 +1,4 @@
-name: hiperseis_main_ci
+name: main_ci
 
 on: [push]
 
@@ -27,3 +27,5 @@ jobs:
           conda list
           cd $GITHUB_WORKSPACE/hiperseis
           pip install .
+        env:
+            FFLAGS: "${FFLAGS} -fallow-argument-mismatch"
