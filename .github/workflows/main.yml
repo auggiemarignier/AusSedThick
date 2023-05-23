@@ -28,4 +28,4 @@ jobs:
           cd $GITHUB_WORKSPACE/hiperseis
           pip install .
         env:
-            FFLAGS: "${FFLAGS} -fallow-argument-mismatch"
+            FFLAGS: "-fallow-argument-mismatch"
