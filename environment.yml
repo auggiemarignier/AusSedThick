@@ -12,3 +12,4 @@ dependencies:
   - requests-html
   - selenium
   - webdriver-manager
+  - matplotlib>=1.4.3,<=3.2.2
