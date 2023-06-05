@@ -2,3 +2,6 @@
 	path = hiperseis
 	url = https://github.com/auggiemarignier/hiperseis.git
 	branch = update_python_rf
+[submodule "BayHunter"]
+	path = BayHunter
+	url = https://github.com/jenndrei/BayHunter.git
