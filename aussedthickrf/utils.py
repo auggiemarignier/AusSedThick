@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import geopandas as gpd
+from os import path
 
 
 def get_geological_timeline() -> dict:
@@ -70,9 +71,22 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     }
     frames = []
     for era in _eras:
-        params["typeName"] = base_typeName + era
-        r = requests.get(url=url, params=params)
-        frames.append(gpd.GeoDataFrame.from_features(r.json()["features"]))
+        p = path.join("..", "data", "australian_sedimentary_basins", era + ".json")
+        try:
+            d = gpd.read_file(p)
+        except FileNotFoundError:
+            params["typeName"] = base_typeName + era
+            r = requests.get(url=url, params=params)
+            if not r.ok:
+                raise requests.exceptions.RequestException
+            d = gpd.GeoDataFrame.from_features(r.json()["features"])
+            d.to_file(p, driver="GeoJSON")
+        except requests.exceptions.RequestException:
+            raise LookupError(
+                f"Not able to get sedimentary basin information for {era} era from file or GA Portal."
+            )
+        finally:
+            frames.append(d)
 
     gdf = pd.concat(frames)
     gdf.set_index("GmlID", inplace=True)
@@ -87,7 +101,9 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
 
     _periods = []
     fills = []
-    ages = []  # mid point of period 'hasBeginning' and 'hasEnd', just to assign a numeric value
+    ages = (
+        []
+    )  # mid point of period 'hasBeginning' and 'hasEnd', just to assign a numeric value
     for i, polygon in gdf.iterrows():
         current_len = len(fills)
         name = polygon["olderNameAge"]
@@ -112,8 +128,10 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
                             raise e(f"No period found for {p}")
                     _type = geological_timeline[_p]["type"]
                 try:
-                    fills.append(periods[_p]['fill'])
-                    ages.append((periods[_p]['hasEnd'] + periods[_p]["hasBeginning"]) / 2)
+                    fills.append(periods[_p]["fill"])
+                    ages.append(
+                        (periods[_p]["hasEnd"] + periods[_p]["hasBeginning"]) / 2
+                    )
                     _periods.append(_p)
                 except KeyError:  # precambrian
                     _periods.append("Precambrian")
@@ -125,7 +143,9 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
             fills.append(None)
             ages.append(None)
 
-    series = pd.DataFrame({"fill": fills, "period_age": ages, "period": _periods}, gdf.index)
+    series = pd.DataFrame(
+        {"fill": fills, "period_age": ages, "period": _periods}, gdf.index
+    )
     gdf = pd.concat([gdf, series], axis=1)
     gdf.dropna(inplace=True, subset=["period_age"])
     return gdf
