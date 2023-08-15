@@ -2,6 +2,10 @@ import requests
 import pandas as pd
 import geopandas as gpd
 from os import path
+import rf
+import pygmt
+import numpy as np
+import os
 
 
 def get_geological_timeline() -> dict:
@@ -149,3 +153,22 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     gdf = pd.concat([gdf, series], axis=1)
     gdf.dropna(inplace=True, subset=["period_age"])
     return gdf
+
+
+def australia_basemap() -> pygmt.Figure:
+    region = [112, 155, -46, -8]
+    ln_min, ln_max, lt_min, lt_max = region
+    projection = (
+        f"M{int(np.mean([ln_min, ln_max]))}/{int(np.mean([lt_min, lt_max]))}/15c"
+    )
+    fig = pygmt.Figure()
+    fig.basemap(region=region, projection=projection, frame=True)
+    fig.coast(
+        region=region,
+        projection=projection,
+        shorelines=1,
+        land="#ffffe6",
+        water="#e6ffff",
+        borders="2/1p,grey",
+    )
+    return fig, region, projection
