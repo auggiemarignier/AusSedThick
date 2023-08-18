@@ -26,7 +26,7 @@ def get_tpsb(trace: rf.rfstream.RFTrace) -> float:
     inds = argrelmax(trace.data)[0]
     p_arrival_ind = int(trace.stats.sampling_rate * (trace.stats.onset - trace.stats.starttime))
     ind = inds[np.searchsorted(inds >= p_arrival_ind, True)]
-    return trace.times()[ind] - (trace.stats.onset - trace.stats.starttime)
+    return ind / trace.stats.sampling_rate - (trace.stats.onset - trace.stats.starttime)
 
 
 def get_geological_timeline() -> dict:
