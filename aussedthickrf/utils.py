@@ -5,7 +5,28 @@ from os import path
 import rf
 import pygmt
 import numpy as np
-import os
+from scipy.signal import argrelmax, argrelmin
+
+
+def get_twtt(autocorrelation: rf.rfstream.RFTrace) -> float:
+    """
+    Picks out the first local minimum of a radial RF autocorrelation.
+    The autocorrelation should start at t=0 i.e. the latter half of the full autocorrelation
+    """
+    ind = argrelmin(autocorrelation.data)[0][0]
+    return ind / autocorrelation.stats.sampling_rate
+
+
+def get_tpsb(trace: rf.rfstream.RFTrace) -> float:
+    """
+    Finds the time of the first local maximum of trace.
+    The pre-arrival part of the trace will have loads of little local maxima.
+    Need to get the first maximum post P-onset
+    """
+    inds = argrelmax(trace.data)[0]
+    p_arrival_ind = int(trace.stats.sampling_rate * (trace.stats.onset - trace.stats.starttime))
+    ind = inds[np.searchsorted(inds >= p_arrival_ind, True)]
+    return trace.times()[ind] - (trace.stats.onset - trace.stats.starttime)
 
 
 def get_geological_timeline() -> dict:
