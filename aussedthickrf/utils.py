@@ -24,7 +24,9 @@ def get_tpsb(trace: rf.rfstream.RFTrace) -> float:
     Need to get the first maximum post P-onset
     """
     inds = argrelmax(trace.data)[0]
-    p_arrival_ind = int(trace.stats.sampling_rate * (trace.stats.onset - trace.stats.starttime))
+    p_arrival_ind = int(
+        trace.stats.sampling_rate * (trace.stats.onset - trace.stats.starttime)
+    )
     ind = inds[np.searchsorted(inds >= p_arrival_ind, True)]
     return ind / trace.stats.sampling_rate - (trace.stats.onset - trace.stats.starttime)
 
@@ -176,7 +178,7 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     return gdf
 
 
-def australia_basemap() -> pygmt.Figure:
+def australia_basemap(basins=True) -> pygmt.Figure:
     region = [112, 155, -46, -8]
     ln_min, ln_max, lt_min, lt_max = region
     projection = (
@@ -189,7 +191,41 @@ def australia_basemap() -> pygmt.Figure:
         projection=projection,
         shorelines=1,
         land="#ffffe6",
-        water="#e6ffff",
-        borders="2/1p,grey",
+        water=None if basins else "#e6ffff",
     )
+    if basins:
+        gdf = get_australian_sedimentary_basins()
+        gdf.set_index("provinceName", inplace=True)
+        key_basins = gdf.loc[
+            [
+                "Eucla Basin",
+                "Murray Basin",
+                "Eromanga Basin",
+                "Perth Basin",
+                "McArthur Basin",
+                "Amadeus Basin",
+                "Southern Carnarvon Basin",
+                "Kimberley Basin",
+                "Canning Basin",
+                "Karumba Basin",
+                "Surat Basin",
+                "Sydney Basin",
+                "Gippsland Basin",
+                "Otway Basin",
+            ]
+        ]
+        key_basins = (
+            key_basins.sort_values(by="period_age", ascending=False)
+            .buffer(0.25)
+            .buffer(-0.5)
+            .buffer(0.25)
+        )  # buffers smooth out the outlines
+        fig.plot(data=key_basins, region=region, projection=projection, pen="1p,grey")
+        fig.coast(  # replot water to hide offshore basins
+            region=region,
+            projection=projection,
+            shorelines=1,
+            resolution="i",
+            water="#e6ffff",
+        )
     return fig, region, projection
