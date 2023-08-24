@@ -178,14 +178,19 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     return gdf
 
 
-def australia_basemap(basins=True) -> pygmt.Figure:
+def australia_basemap(title=None, basins=True) -> pygmt.Figure:
     region = [112, 155, -46, -8]
     ln_min, ln_max, lt_min, lt_max = region
     projection = (
         f"M{int(np.mean([ln_min, ln_max]))}/{int(np.mean([lt_min, lt_max]))}/15c"
     )
     fig = pygmt.Figure()
-    fig.basemap(region=region, projection=projection, frame=True)
+    with pygmt.config(FONT_TITLE="20p,Helvetica,black"):
+        fig.basemap(
+            region=region,
+            projection=projection,
+            frame=True if title is None else ["af", f"+t{title}"],
+        )
     fig.coast(
         region=region,
         projection=projection,
