@@ -200,33 +200,11 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
         water=None if basins else "#e6ffff",
     )
     if basins:
-        gdf = get_australian_sedimentary_basins()
-        gdf.set_index("provinceName", inplace=True)
-        key_basins = gdf.loc[
-            [
-                "Eucla Basin",
-                "Murray Basin",
-                "Eromanga Basin",
-                "Perth Basin",
-                "McArthur Basin",
-                "Amadeus Basin",
-                "Southern Carnarvon Basin",
-                "Kimberley Basin",
-                "Canning Basin",
-                "Karumba Basin",
-                "Surat Basin",
-                "Sydney Basin",
-                "Gippsland Basin",
-                "Otway Basin",
-            ]
-        ]
-        key_basins = (
-            key_basins.sort_values(by="period_age", ascending=False)
-            .buffer(0.25)
-            .buffer(-0.5)
-            .buffer(0.25)
-        )  # buffers smooth out the outlines
-        fig.plot(data=key_basins, region=region, projection=projection, pen="1p,grey")
+        lon, lat = np.loadtxt(
+            path.join("..", "data", "australian_sedimentary_basins", "GEOPcoords.txt"),
+            unpack=True,
+        )
+        fig.plot(x=lon, y=lat, region=region, projection=projection, pen="1p,grey")
         fig.coast(  # replot water to hide offshore basins
             region=region,
             projection=projection,
