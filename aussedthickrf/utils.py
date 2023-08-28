@@ -2,6 +2,33 @@ import requests
 import pandas as pd
 import geopandas as gpd
 from os import path
+import rf
+import pygmt
+import numpy as np
+from scipy.signal import argrelmax, argrelmin
+
+
+def get_twtt(autocorrelation: rf.rfstream.RFTrace) -> float:
+    """
+    Picks out the first local minimum of a radial RF autocorrelation.
+    The autocorrelation should start at t=0 i.e. the latter half of the full autocorrelation
+    """
+    ind = argrelmin(autocorrelation.data)[0][0]
+    return ind / autocorrelation.stats.sampling_rate
+
+
+def get_tpsb(trace: rf.rfstream.RFTrace) -> float:
+    """
+    Finds the time of the first local maximum of trace.
+    The pre-arrival part of the trace will have loads of little local maxima.
+    Need to get the first maximum post P-onset
+    """
+    inds = argrelmax(trace.data)[0]
+    p_arrival_ind = int(
+        trace.stats.sampling_rate * (trace.stats.onset - trace.stats.starttime)
+    )
+    ind = inds[np.searchsorted(inds >= p_arrival_ind, True)]
+    return ind / trace.stats.sampling_rate - (trace.stats.onset - trace.stats.starttime)
 
 
 def get_geological_timeline() -> dict:
@@ -149,3 +176,40 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     gdf = pd.concat([gdf, series], axis=1)
     gdf.dropna(inplace=True, subset=["period_age"])
     return gdf
+
+
+def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
+    region = [112, 155, -46, -8]
+    ln_min, ln_max, lt_min, lt_max = region
+    projection = (
+        f"M{int(np.mean([ln_min, ln_max]))}/{int(np.mean([lt_min, lt_max]))}/15c"
+    )
+    if fig is None:
+        fig = pygmt.Figure()
+    with pygmt.config(FONT_TITLE="20p,Helvetica,black"):
+        fig.basemap(
+            region=region,
+            projection=projection,
+            frame=frame,
+        )
+    fig.coast(
+        region=region,
+        projection=projection,
+        shorelines=1,
+        land="#ffffe6",
+        water=None if basins else "#e6ffff",
+    )
+    if basins:
+        lon, lat = np.loadtxt(
+            path.join("..", "data", "australian_sedimentary_basins", "GEOPcoords.txt"),
+            unpack=True,
+        )
+        fig.plot(x=lon, y=lat, region=region, projection=projection, pen="1p,grey")
+        fig.coast(  # replot water to hide offshore basins
+            region=region,
+            projection=projection,
+            shorelines=1,
+            resolution="i",
+            water="#e6ffff",
+        )
+    return fig, region, projection
