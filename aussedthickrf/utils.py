@@ -6,6 +6,7 @@ import rf
 import pygmt
 import numpy as np
 from scipy.signal import argrelmax, argrelmin
+from fiona.errors import DriverError
 
 
 def get_twtt(autocorrelation: rf.rfstream.RFTrace) -> float:
@@ -98,16 +99,21 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     }
     frames = []
     for era in _eras:
-        p = path.join("..", "data", "australian_sedimentary_basins", era + ".json")
+        p = path.join(
+            path.dirname(__file__),
+            "..",
+            "data",
+            "australian_sedimentary_basins",
+            era + ".json",
+        )
         try:
             d = gpd.read_file(p)
-        except FileNotFoundError:
+        except DriverError:
             params["typeName"] = base_typeName + era
             r = requests.get(url=url, params=params)
             if not r.ok:
                 raise requests.exceptions.RequestException
             d = gpd.GeoDataFrame.from_features(r.json()["features"])
-            d.to_file(p, driver="GeoJSON")
         except requests.exceptions.RequestException:
             raise LookupError(
                 f"Not able to get sedimentary basin information for {era} era from file or GA Portal."
@@ -201,7 +207,13 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
     )
     if basins:
         lon, lat = np.loadtxt(
-            path.join("..", "data", "australian_sedimentary_basins", "GEOPcoords.txt"),
+            path.join(
+                path.dirname(__file__),
+                "..",
+                "data",
+                "australian_sedimentary_basins",
+                "GEOPcoords.txt",
+            ),
             unpack=True,
         )
         fig.plot(x=lon, y=lat, region=region, projection=projection, pen="1p,grey")
