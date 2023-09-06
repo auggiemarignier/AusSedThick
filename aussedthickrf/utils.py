@@ -198,13 +198,6 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
             projection=projection,
             frame=frame,
         )
-    fig.coast(
-        region=region,
-        projection=projection,
-        shorelines=1,
-        land="#ffffe6",
-        water=None if basins else "#e6ffff",
-    )
     if basins:
         lon, lat = np.loadtxt(
             path.join(
@@ -217,11 +210,10 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
             unpack=True,
         )
         fig.plot(x=lon, y=lat, region=region, projection=projection, pen="1p,grey")
-        fig.coast(  # replot water to hide offshore basins
-            region=region,
-            projection=projection,
-            shorelines=1,
-            resolution="i",
-            water="#e6ffff",
-        )
+    fig.coast(
+        region=region,
+        projection=projection,
+        shorelines=1,
+        resolution="i",
+    )
     return fig, region, projection
