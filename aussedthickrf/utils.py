@@ -192,12 +192,12 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
     )
     if fig is None:
         fig = pygmt.Figure()
-    with pygmt.config(FONT_TITLE="20p,Helvetica,black"):
-        fig.basemap(
-            region=region,
-            projection=projection,
-            frame=frame,
-        )
+    pygmt.config(FONT="Times-Roman", FONT_TITLE="20p,Times-Roman,black")
+    fig.basemap(
+        region=region,
+        projection=projection,
+        frame=frame,
+    )
     if basins:
         lon, lat = np.loadtxt(
             path.join(
