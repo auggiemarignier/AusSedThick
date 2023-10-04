@@ -184,7 +184,7 @@ def get_australian_sedimentary_basins() -> gpd.GeoDataFrame:
     return gdf
 
 
-def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
+def australia_basemap(fig=None, frame=True, basins=False) -> pygmt.Figure:
     region = [112, 155, -46, -8]
     ln_min, ln_max, lt_min, lt_max = region
     projection = (
@@ -199,17 +199,7 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
         frame=frame,
     )
     if basins:
-        lon, lat = np.loadtxt(
-            path.join(
-                path.dirname(__file__),
-                "..",
-                "data",
-                "australian_sedimentary_basins",
-                "GEOPcoords.txt",
-            ),
-            unpack=True,
-        )
-        fig.plot(x=lon, y=lat, region=region, projection=projection, pen="1p,grey")
+        add_basins(fig, region, projection)
     fig.coast(
         region=region,
         projection=projection,
@@ -217,3 +207,23 @@ def australia_basemap(fig=None, frame=True, basins=True) -> pygmt.Figure:
         resolution="i",
     )
     return fig, region, projection
+
+
+def add_basins(fig: pygmt.Figure, region: list, projection: str, pen: str = "1p,grey"):
+    lon, lat = np.loadtxt(
+        path.join(
+            path.dirname(__file__),
+            "..",
+            "data",
+            "australian_sedimentary_basins",
+            "GEOPcoords.txt",
+        ),
+        unpack=True,
+    )
+    fig.plot(x=lon, y=lat, region=region, projection=projection, pen=pen)
+    fig.coast(  # replot coast to cover up basin edges
+        region=region,
+        projection=projection,
+        shorelines=1,
+        resolution="i",
+    )
